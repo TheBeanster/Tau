@@ -2,11 +2,65 @@
 
 
 
+typedef struct parse_exprnode
+{
+	Tau_ListNode links_all;
+	union
+	{
+		Tau_ListNode links_operands;
+		Tau_ListNode links_operators;
+	};
+	Tau_ExprNode* node;
+	Tau_Token* token; // TODO This is temporary
+} parse_exprnode;
+
+#define CREATE_NODE(t)										\
+	parse_exprnode* node = Tau_ALLOC_TYPE(parse_exprnode);	\
+	node->node = Tau_ALLOC_TYPE(Tau_ExprNode);				\
+	node->node->type = t
+
+static parse_exprnode* parse_operator(Tau_Token* token)
+{
+	parse_exprnode* node = Tau_ALLOC_TYPE(parse_exprnode);
+	node->node = Tau_ALLOC_TYPE(Tau_ExprNode);
+	node->node->type = Tau_ET_OPERATOR;
+	node->node->op.id = token->operatorid;
+	return node;
+}
+
+static parse_exprnode* parse_identifier(Tau_Token* token)
+{
+	parse_exprnode* node = Tau_ALLOC_TYPE(parse_exprnode);
+	node->node = Tau_ALLOC_TYPE(Tau_ExprNode);
+	node->node->type = Tau_ET_VARIABLE;
+	node->node->variable = _strdup(token->string);
+	return node;
+}
+
+
+
+
+
+#define PUSH_OPERAND(node)									\
+	Tau_PushBackList(&l_operands, &node->links_operands);	\
+	Tau_PushBackList(&l_all, &node->links_all);					node->token = i
+
+#define PUSH_OPERATOR(node)									\
+	Tau_PushBackList(&l_operators, &node->links_operators);	\
+	Tau_PushBackList(&l_all, &node->links_all);					node->token = i
+
 static Tau_ExprNode* parse_expression(Tau_State* state, const Tau_Token* begin, Tau_Token** end)
 {
+	printf(" > Parsing expression starting with '");
+	Tau_PrintToken(begin);
+	printf("'\n");
+
+	if (!begin) return NULL;
+
+	/* Lists of parse_exprnode in the expression */
 	Tau_List l_operands = { 0 };
 	Tau_List l_operators = { 0 };
-	Tau_List l_all = { 0 };
+	Tau_List l_all = { 0 }; /* List of all nodes in the expression */
 
 	/* 5 + 2 * (3 + test(1, 3 + var[0])) */
 
@@ -16,7 +70,11 @@ static Tau_ExprNode* parse_expression(Tau_State* state, const Tau_Token* begin, 
 		switch (i->type)
 		{
 		case Tau_TT_OPERATOR:
-
+		{
+			CREATE_NODE(Tau_ET_OPERATOR);
+			node->node->op.id = i->operatorid;
+			PUSH_OPERATOR(node);
+		}
 			break;
 
 		case Tau_TT_KEYWORD:
@@ -30,13 +88,45 @@ static Tau_ExprNode* parse_expression(Tau_State* state, const Tau_Token* begin, 
 
 			break;
 
+		case Tau_TT_IDENTIFIER:
+		{
+			/* Variable OR function call */
+			CREATE_NODE(Tau_TT_IDENTIFIER);
+			node->node->variable = _strdup(i->string);
+			PUSH_OPERAND(node);
+		}
+			break;
+
+		case Tau_TT_NUMBERLITERAL:
+		{
+			CREATE_NODE(Tau_ET_NUMBERLITERAL);
+			node->node->num = strtof(i->string, NULL);
+			PUSH_OPERAND(node);
+		}
+			break;
+
 		default:
 			break;
 		}
 	}
 
 expr_end:
+
+	printf(" > Expression ended on token '");
+	Tau_PrintToken(i);
+	printf("'\nTokens in expression: ");
+	for (parse_exprnode* n = l_all.begin; n; n = n->links_all.next)
+	{
+		Tau_PrintToken(n->token);
+		printf(" ");
+	}
+	putchar('\n');
+
 	*end = i;
+	return NULL;
+
+on_fail:
+
 	return NULL;
 }
 

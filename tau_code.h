@@ -139,7 +139,7 @@ typedef struct
 			int len;
 		} str;
 		//Tau_Function* closure;
-		char* identifier;
+		char* variable;
 		struct
 		{
 			char* identifier;
