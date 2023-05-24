@@ -2,6 +2,10 @@
 
 
 
+static Tau_Body* parse_body(Tau_State* state, const Tau_Token* begin, Tau_Token** end);
+
+
+
 typedef struct parse_exprnode
 {
 	Tau_ListNode links_all;
@@ -43,13 +47,24 @@ static parse_exprnode* parse_identifier(Tau_Token* token)
 
 #define PUSH_OPERAND(node)									\
 	Tau_PushBackList(&l_operands, &node->links_operands);	\
-	Tau_PushBackList(&l_all, &node->links_all);					node->token = i
+	Tau_PushBackList(&l_all, &node->links_all);				\
+	prevwasoperator = Tau_FALSE;								node->token = i
 
 #define PUSH_OPERATOR(node)									\
 	Tau_PushBackList(&l_operators, &node->links_operators);	\
-	Tau_PushBackList(&l_all, &node->links_all);					node->token = i
+	Tau_PushBackList(&l_all, &node->links_all);				\
+	prevwasoperator = Tau_TRUE;									node->token = i
 
-static Tau_ExprNode* parse_expression(Tau_State* state, const Tau_Token* begin, Tau_Token** end)
+
+/** @brief Parses an expression tree.
+ * @param state 
+ * @param begin The token where the expression begins. Shouldn't be separator
+ * @param readendline If the expression should end on vaild endlines. Should only be true on expression statements. 
+ * This is because endlines denote where expression statements end. But in for example, if conditions, the expression always ends on 'then'.
+ * @param end The token after the expression ends.
+ * @return Pointer to the top node of the expression tree.
+ */
+static Tau_ExprNode* parse_expression(Tau_State* state, const Tau_Token* begin, const Tau_Bool readendline, Tau_Token** end)
 {
 	printf(" > Parsing expression starting with '");
 	Tau_PrintToken(begin);
@@ -63,9 +78,11 @@ static Tau_ExprNode* parse_expression(Tau_State* state, const Tau_Token* begin, 
 	Tau_List l_all = { 0 }; /* List of all nodes in the expression */
 
 	/* 5 + 2 * (3 + test(1, 3 + var[0])) */
+	/* 4 + 2 * (1 + 3\n */
 
+	Tau_Bool prevwasoperator = Tau_FALSE;
 	Tau_Token* i;
-	for (i = begin;; i = i->next)
+	for (i = begin; i; i = i->next)
 	{
 		switch (i->type)
 		{
@@ -79,13 +96,60 @@ static Tau_ExprNode* parse_expression(Tau_State* state, const Tau_Token* begin, 
 
 		case Tau_TT_KEYWORD:
 			if (i->keywordid == Tau_KW_FALSE || i->keywordid == Tau_KW_TRUE)
-				printf("true or false keyword\n");
+			{
+				CREATE_NODE(Tau_ET_BOOLLITERAL);
+				node->node->boolean = i->keywordid != Tau_KW_FALSE;
+				PUSH_OPERAND(node);
+			}
 			else
-				goto expr_end;
+				/* Any other keyword ends expression */
+				if (prevwasoperator) /* Operator without right operand */
+				{
+					Tau_PUSHTOKENERROR(i, "Operator is missing right operand");
+					goto on_fail;
+				} else
+					goto expr_end;
 			break;
 
 		case Tau_TT_SEPARATOR:
+			switch (i->separatorid)
+			{
+			case Tau_SP_COMMA:
+			case Tau_SP_RPAREN:
+			case Tau_SP_RBRACE:
+			case Tau_SP_RBRACKET:
+				/* These all end expressions */
+				if (prevwasoperator)
+				{
+					Tau_PUSHTOKENERROR(i, "Operator is missing right operand");
+					goto on_fail; /* Operator without right operand */
+				} else
+					goto expr_end; /* Expression ends on any of , ) ] or } */
+				break;
+			case Tau_SP_LPAREN:
+			{
+				printf("Parsing subexpression\n");
+				Tau_Token* subexpr_end;
+				Tau_ExprNode* subexpr = parse_expression(state, i->next, Tau_FALSE, &subexpr_end);
+				if (subexpr && subexpr_end && subexpr_end->separatorid == Tau_SP_RPAREN)
+				{
+					/* Subexpression ends with matching parentheses */
+					parse_exprnode* node = Tau_ALLOC_TYPE(parse_exprnode);
+					node->node = subexpr;
+					PUSH_OPERAND(node);
+					i = subexpr_end;
+				} else
+				{
+					Tau_PUSHTOKENERROR(i, "Subexpression doesn't have closing parenthesis");
+					Tau_DestroyExpression(subexpr);
+					goto on_fail;
+				}
+				break;
 
+			}
+			default:
+				break;
+			}
 			break;
 
 		case Tau_TT_IDENTIFIER:
@@ -123,7 +187,7 @@ expr_end:
 	putchar('\n');
 
 	*end = i;
-	return NULL;
+	return ((parse_exprnode*)l_all.begin)->node;
 
 on_fail:
 
@@ -134,13 +198,28 @@ on_fail:
 
 static Tau_StatementNode* parse_if_statement(Tau_State* state, const Tau_Token* begin, Tau_Token** end)
 {
-	Tau_ExprNode* condition = parse_expression(state, begin->next, end);
+	Tau_Token* i = begin;
 
-	if (!end || (*end)->keywordid != Tau_KW_THEN)
+	/* Parse the if statement condition expression */
+	Tau_ExprNode* condition = parse_expression(state, begin->next, Tau_FALSE, &i);
+	if (!condition || !i || i->keywordid != Tau_KW_THEN || !i->next)
 	{
-		printf("If statement condition ended bad\n");
-		Tau_DestroyExpression(condition);
-		return NULL;
+		Tau_PUSHTOKENERROR(begin, "Couldn't parse if-statement condition");
+		goto on_fail;
+	}
+	i = i->next; /* i is token after 'then' */
+
+	/* Parse the true body */
+	Tau_Body* body_ontrue = parse_body(state, i, &i);
+	if (!body_ontrue || !i) /* If body couldn't parse, it doesn't end */
+	{
+		Tau_PUSHTOKENERROR(begin, "Couldn't parse if-statement true body");
+		goto on_fail;
+	}
+	if (!(i->keywordid == Tau_KW_END || i->keywordid == Tau_KW_ELSE)) /* If it doesn't end on 'end' or 'else' */
+	{
+		Tau_PUSHTOKENERROR(begin, "If-statement body doesn't end on 'end' or 'else'");
+		goto on_fail;
 	}
 
 	Tau_StatementNode* stmt = Tau_ALLOC_TYPE(Tau_StatementNode);
@@ -148,11 +227,28 @@ static Tau_StatementNode* parse_if_statement(Tau_State* state, const Tau_Token* 
 	stmt->stmt_if.condition = condition;
 
 	return stmt;
+
+on_fail:
+	Tau_DestroyExpression(condition);
+	*end = NULL;
+	return NULL;
 }
 
 
 
-static Tau_StatementNode* parse_statement(Tau_State* state, const Tau_Token* begin, Tau_Token** end)
+static Tau_StatementNode* parse_expression_statement(Tau_State* state, Tau_Token* begin, Tau_Token** end)
+{
+	Tau_Token* i = begin;
+	Tau_ExprNode* expression = parse_expression(state, begin->next, Tau_TRUE, &i);
+	Tau_StatementNode* stmt = Tau_ALLOC_TYPE(Tau_StatementNode);
+	stmt->type = Tau_ST_EXPRESSION;
+	stmt->stmt_expr.expression = expression;
+	return stmt;
+}
+
+
+
+static Tau_StatementNode* parse_statement(Tau_State* state, Tau_Token* begin, Tau_Token** end)
 {
 	printf(" > Parsing statement starting with '");
 	Tau_PrintToken(begin);
@@ -166,12 +262,13 @@ static Tau_StatementNode* parse_statement(Tau_State* state, const Tau_Token* beg
 		break;
 
 	default:
+		stmt = parse_expression_statement(state, begin, end);
 		break;
 	}
 
 	if (!stmt)
 	{
-		printf("Couldn't parse statement\n");
+		Tau_PUSHTOKENERROR(begin, "Couldn't parse statement");
 		return NULL;
 	}
 
@@ -190,7 +287,7 @@ static Tau_Body* parse_body(Tau_State* state, const Tau_Token* begin, Tau_Token*
 		if (!stmt)
 		{
 			*end = i;
-			return stmt;
+			return body;
 		}
 		Tau_PushBackList(&body->statements, stmt);
 	}
@@ -213,8 +310,8 @@ Tau_Body* Tau_ParseSourceCode(Tau_State* state, const char* sourcecode)
 	for (Tau_Token* i = tokens.begin; i; i = i->next)
 	{
 		Tau_PrintToken(i);
-		if (i->type != Tau_TT_ENDLINE)
-			printf(" ");
+		if (!i->lastonline)
+			putchar(' ');
 	}
 	putchar('\n');
 	/* The source code is now separated into tokens */
@@ -228,6 +325,7 @@ Tau_Body* Tau_ParseSourceCode(Tau_State* state, const char* sourcecode)
 		body = NULL;
 	}
 
+	printf("\n\n   MESSAGES\n");
 	Tau_PrintAllStateMessages(state);
 
 	return body;
@@ -276,7 +374,7 @@ void Tau_PrintSourceCode(const char* const sourcecode)
 				putchar(*c);
 			if (*c == '\n') break;
 		}
-		*c++;
+		c++;
 	}
 end:
 	putchar('\n');

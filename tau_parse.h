@@ -16,7 +16,6 @@ enum
 	Tau_TT_NUMBERLITERAL,
 	Tau_TT_STRINGLITERAL,
 	Tau_TT_IDENTIFIER,
-	Tau_TT_ENDLINE,
 	Tau_TT_NULL = -1,		/* Invalid token */
 };
 
@@ -30,7 +29,8 @@ typedef struct Tau_Token
 	Tau_SeparatorID separatorid;
 
 	char* string;
-	int linenum;
+	unsigned short linenum;
+	short lastonline; /* If this token is the last on a line */
 } Tau_Token;
 
 void Tau_PrintToken(const Tau_Token* token);

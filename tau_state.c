@@ -22,7 +22,7 @@ void Tau_PushStateMessage(Tau_State* state, Tau_StateMessageType type, int linen
 	message->msg = _strdup(msg);
 	message->type = type;
 	message->linenum = linenum;
-	Tau_PushBackList(&state->messages, message);
+	Tau_PushFrontList(&state->messages, message);
 }
 
 void Tau_PrintAllStateMessages(Tau_State* state)

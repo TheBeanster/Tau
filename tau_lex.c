@@ -13,11 +13,11 @@ void Tau_PrintToken(const Tau_Token* token)
 	case Tau_TT_NUMBERLITERAL:	printf("%s", token->string); break;
 	case Tau_TT_STRINGLITERAL:	printf("\"%s\"", token->string); break;
 	case Tau_TT_IDENTIFIER:		printf("%s", token->string); break;
-	case Tau_TT_ENDLINE:		printf("\n"); break;
 	default:
 		printf("invalid");
 		break;
 	}
+	if (token->lastonline) putchar('\n');
 }
 
 void Tau_DestroyToken(Tau_Token* token)
@@ -38,9 +38,9 @@ typedef enum
 	CT_OPERATOR,
 	CT_SEPARATOR,
 	CT_SPACER,		/* Space or tab */
-	CT_ENDLINE,
 	CT_QUOTE,		/* Quotation marks for strings */
 	CT_COMMENT,		/* Comments start with # and end with an endline */
+	CT_ENDLINE,
 } chartype;
 
 #define Tau_IsAlpha(c) (isalpha(c) || c == '_')
@@ -58,6 +58,7 @@ static chartype check_chartype(const char c)
 	if (c == '\n' || c == ';')		return CT_ENDLINE; /* Semicolon acts the same as endline */
 	if (Tau_IsQuote(c))				return CT_QUOTE;
 	if (c == '#')					return CT_COMMENT;
+	if (c == '\n')					return CT_ENDLINE;
 	return CT_NULL;
 }
 
@@ -72,6 +73,7 @@ static Tau_Token* create_token()
 	token->operatorid = Tau_OP_NULL;
 	token->separatorid = Tau_SP_NULL;
 	token->string = NULL;
+	token->lastonline = Tau_FALSE;
 	return token;
 }
 
@@ -207,16 +209,6 @@ static int read_separator_token(
 
 
 
-static void push_endline_token(Tau_List* tokens, int linenum)
-{
-	Tau_Token* token = create_token();
-	token->type = Tau_TT_ENDLINE;
-	token->linenum = linenum;
-	Tau_PushBackList(tokens, token);
-}
-
-
-
 static int read_string_token(
 	Tau_State* state,
 	Tau_List* tokens,
@@ -282,9 +274,10 @@ int Tau_ParseSourcecodeTokens(Tau_State* state, Tau_List* tokens, const char* so
 		case CT_OPERATOR:	i = read_operator_token(state, tokens, sourcecode, i, linenum); break;
 		case CT_SEPARATOR:	i = read_separator_token(state, tokens, sourcecode, i, linenum); break;
 		case CT_SPACER:		i++; continue; /* No need to check if token is invalid */
-		case CT_ENDLINE:	push_endline_token(tokens, linenum); linenum++; i++; continue;
 		case CT_QUOTE:		i = read_string_token(state, tokens, sourcecode, i, linenum); break;
 		case CT_COMMENT:	i = read_comment(sourcecode, i); continue;
+
+		case CT_ENDLINE:	((Tau_Token*)tokens->end)->lastonline = Tau_TRUE; i++; continue;
 
 		default: /* Invalid character */
 		{
