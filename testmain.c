@@ -7,7 +7,7 @@ int main(int argc, char** argv)
 {
 	Tau_State* state = Tau_CreateState();
 
-	Tau_ParseSourceCode(state, "if a == (5 + 1) then\n\t69\nend");
+	Tau_ParseSourceCode(state, "(69) if 4 then end");
 
 	Tau_DestroyState(state);
 

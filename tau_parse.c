@@ -81,8 +81,8 @@ static Tau_ExprNode* parse_expression(Tau_State* state, const Tau_Token* begin, 
 	/* 4 + 2 * (1 + 3\n */
 
 	Tau_Bool prevwasoperator = Tau_FALSE;
-	Tau_Token* i;
-	for (i = begin; i; i = i->next)
+	Tau_Token* i = begin;
+	while (i)
 	{
 		switch (i->type)
 		{
@@ -172,6 +172,8 @@ static Tau_ExprNode* parse_expression(Tau_State* state, const Tau_Token* begin, 
 		default:
 			break;
 		}
+
+		i = i->next;
 	}
 
 expr_end:
@@ -239,10 +241,12 @@ on_fail:
 static Tau_StatementNode* parse_expression_statement(Tau_State* state, Tau_Token* begin, Tau_Token** end)
 {
 	Tau_Token* i = begin;
-	Tau_ExprNode* expression = parse_expression(state, begin->next, Tau_TRUE, &i);
+	Tau_ExprNode* expression = parse_expression(state, begin, Tau_TRUE, &i);
+	if (!expression) return NULL;
 	Tau_StatementNode* stmt = Tau_ALLOC_TYPE(Tau_StatementNode);
 	stmt->type = Tau_ST_EXPRESSION;
 	stmt->stmt_expr.expression = expression;
+	*end = i;
 	return stmt;
 }
 
