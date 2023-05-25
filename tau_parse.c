@@ -26,28 +26,55 @@ typedef struct parse_exprnode
 	node->node = Tau_ALLOC_TYPE(Tau_ExprNode);				\
 	node->node->type = t
 
-static parse_exprnode* parse_operator(Tau_Token* token)
+
+
+typedef struct list_exprnode
 {
-	parse_exprnode* node = Tau_ALLOC_TYPE(parse_exprnode);
-	node->node = Tau_ALLOC_TYPE(Tau_ExprNode);
-	node->node->type = Tau_ET_OPERATOR;
-	node->node->op.id = token->operatorid;
+	Tau_LISTLINKSHEADER(list_exprnode);
+	Tau_ExprNode* node;
+} list_exprnode;
+
+static Tau_ExprNode* parse_functioncall(Tau_State* state, Tau_Token* begin, Tau_Token** end)
+{
+	Tau_ExprNode* node = Tau_ALLOC_TYPE(Tau_ExprNode);
+	node->type = Tau_ET_FUNCTIONCALL;
+	node->functioncall.identifier = _strdup(begin->string);
+	
+	Tau_List args = { 0 };
+	Tau_Token* i = begin->next->next; /* This is safe since the caller already cheched begin->next */
+	while (i)
+	{
+		list_exprnode* arg = Tau_ALLOC_TYPE(list_exprnode);
+		arg->node = parse_expression(state, i, Tau_FALSE, &i);
+		if (!i || (i->separatorid != Tau_SP_COMMA && i->separatorid != Tau_SP_RPAREN))
+		{
+			Tau_PUSHTOKENERROR(begin, "Function call argument is missing ','");
+			goto on_fail;
+		}
+		if (i->separatorid == Tau_SP_RPAREN)
+			goto funccall_end;
+		Tau_PushBackList(&args, arg);
+		i = i->next;
+	}
+	/* End of file */
+	Tau_PUSHTOKENERROR(begin, "Function call doesn't have closing ')'");
+	goto on_fail;
+
+funccall_end:
+
+	node->functioncall.numargs = args.count;
+	node->functioncall.args = Tau_CALLOC(args.count, sizeof(Tau_ExprNode*));
+	list_exprnode* argsiter = args.begin;
+	for (int i = 0; i < args.count; i++)
+	{
+		node->functioncall.args[i] = argsiter->node;
+		argsiter = argsiter->next;
+	}
+	*end = i;
 	return node;
-}
 
-static parse_exprnode* parse_identifier(Tau_Token* token)
-{
-	parse_exprnode* node = Tau_ALLOC_TYPE(parse_exprnode);
-	node->node = Tau_ALLOC_TYPE(Tau_ExprNode);
-	node->node->type = Tau_ET_VARIABLE;
-	node->node->variable = _strdup(token->string);
-	return node;
-}
-
-
-
-static Tau_ExprNode* parse_functioncall(Tau_Token* token)
-{
+on_fail:
+	*end = i;
 	return NULL;
 }
 
@@ -165,7 +192,21 @@ static Tau_ExprNode* parse_expression(Tau_State* state, const Tau_Token* begin, 
 			if (i->next && i->next->separatorid == Tau_SP_LPAREN)
 			{
 				/* Function call */
-				Tau_ExprNode* funccall = parse_functioncall(i);
+				Tau_Token* funccall_end;
+				Tau_ExprNode* funccall = parse_functioncall(state, i, &funccall_end);
+				if (funccall && funccall_end && funccall_end->separatorid == Tau_SP_RPAREN)
+				{
+					/* Subexpression ends with matching parentheses */
+					parse_exprnode* node = Tau_ALLOC_TYPE(parse_exprnode);
+					node->node = funccall;
+					PUSH_OPERAND(node);
+					i = funccall_end;
+				} else
+				{
+					Tau_PUSHTOKENERROR(i, "Couldn't parse function call");
+					Tau_DestroyExpression(funccall);
+					goto on_fail;
+				}
 			} else
 			{
 				/* Variable */
@@ -248,9 +289,13 @@ static Tau_StatementNode* parse_if_statement(Tau_State* state, const Tau_Token* 
 
 	/* Parse the if statement condition expression */
 	Tau_ExprNode* condition = parse_expression(state, begin->next, Tau_FALSE, &i);
-	if (!condition || !i || i->keywordid != Tau_KW_THEN || !i->next)
+	if (!condition)
 	{
 		Tau_PUSHTOKENERROR(begin, "Couldn't parse if-statement condition");
+		goto on_fail;
+	} else if (!i || i->keywordid != Tau_KW_THEN || !i->next)
+	{
+		Tau_PUSHTOKENERROR(begin, "If-statement missing 'then'");
 		goto on_fail;
 	}
 	i = i->next; /* i is token after 'then' */
@@ -266,9 +311,13 @@ static Tau_StatementNode* parse_if_statement(Tau_State* state, const Tau_Token* 
 	{
 		/* There is a body on false */
 		Tau_Body* body_onfalse = parse_body(state, i->next, &i);
-		if (!body_onfalse || !i) /* If body couldn't parse or it doesn't end */
+		if (!body_onfalse) /* If body couldn't parse */
 		{
 			Tau_PUSHTOKENERROR(begin, "Couldn't parse if-statement false body");
+			goto on_fail;
+		} else if (!i)
+		{
+			Tau_PUSHTOKENERROR(begin, "Missing 'end'");
 			goto on_fail;
 		}
 	}

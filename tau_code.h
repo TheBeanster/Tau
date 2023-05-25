@@ -144,7 +144,7 @@ typedef struct
 		{
 			char* identifier;
 			int numargs;
-			char** argnames;
+			struct Tau_ExprNode** args; /* Array of arguments */
 		} functioncall;
 	};
 } Tau_ExprNode;
