@@ -48,4 +48,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="test.tau">
+      <Filter>Source Files</Filter>
+    </None>
+  </ItemGroup>
 </Project>

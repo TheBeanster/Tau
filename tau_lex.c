@@ -17,7 +17,7 @@ void Tau_PrintToken(const Tau_Token* token)
 		printf("invalid");
 		break;
 	}
-	if (token->lastonline) putchar('\n');
+	if (token->lastonline) putchar('\\');
 }
 
 void Tau_DestroyToken(Tau_Token* token)
@@ -136,6 +136,11 @@ static int read_number_token(
 		}
 		else if (!isdigit(sourcecode[i]))
 			{
+				if (Tau_IsAlpha(sourcecode[i]))
+				{
+					Tau_PUSHSYNTAXERROR("Letter character '%c' directly after number", sourcecode[i]);
+					return ~(i + 1);
+				}
 				end = i;
 				break;
 			}
@@ -277,7 +282,11 @@ int Tau_ParseSourcecodeTokens(Tau_State* state, Tau_List* tokens, const char* so
 		case CT_QUOTE:		i = read_string_token(state, tokens, sourcecode, i, linenum); break;
 		case CT_COMMENT:	i = read_comment(sourcecode, i); continue;
 
-		case CT_ENDLINE:	((Tau_Token*)tokens->end)->lastonline = Tau_TRUE; i++; continue;
+		case CT_ENDLINE:
+			if (sourcecode[i + 1] != '\\') /* Backslash negates endline */
+				((Tau_Token*)tokens->end)->lastonline = Tau_TRUE;
+			i++;
+			continue;
 
 		default: /* Invalid character */
 		{

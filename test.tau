@@ -1,0 +1,5 @@
+if a == 3 then
+	func(10)
+else
+	4
+end

@@ -156,6 +156,9 @@
     <ClInclude Include="tau_state.h" />
     <ClInclude Include="tau_utility.h" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="test.tau" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
