@@ -13,6 +13,12 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Source Files\Runtime">
+      <UniqueIdentifier>{3f2a48d9-ffb8-4d8f-9f82-32060f3565d2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Parse">
+      <UniqueIdentifier>{0b0879ce-e2e2-49ff-bdef-82750fe1d9cf}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="testmain.c">
@@ -27,11 +33,11 @@
     <ClCompile Include="tau_code.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="tau_parse.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="tau_lex.c">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Parse</Filter>
+    </ClCompile>
+    <ClCompile Include="tau_parse.c">
+      <Filter>Source Files\Parse</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -45,7 +51,7 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="tau_parse.h">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Parse</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

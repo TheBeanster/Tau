@@ -249,7 +249,6 @@ static Tau_ExprNode* parse_expression(Tau_State* state, const Tau_Token* begin, 
 	}
 
 expr_end:
-
 	printf(" > Expression ended on token '");
 	Tau_PrintToken(i);
 	printf("'\nTokens in expression: ");
@@ -259,6 +258,21 @@ expr_end:
 		printf(" ");
 	}
 	putchar('\n');
+
+	/* Now organize the expression tree */
+
+	/*
+	1 + 2 * 3 * 4
+
+	    +
+	   1  *
+	     *  4
+		2 3
+
+	2 * 3 + 1 * 2
+
+
+	*/
 
 	*end = i;
 
@@ -345,13 +359,33 @@ on_fail:
 static Tau_StatementNode* parse_expression_statement(Tau_State* state, Tau_Token* begin, Tau_Token** end)
 {
 	Tau_Token* i = begin;
-	Tau_ExprNode* expression = parse_expression(state, begin, Tau_TRUE, &i);
-	if (!expression) return NULL;
+	Tau_ExprNode* expression = parse_expression(state, i, Tau_TRUE, &i);
+	if (!expression) goto on_fail;
 	Tau_StatementNode* stmt = Tau_ALLOC_TYPE(Tau_StatementNode);
 	stmt->type = Tau_ST_EXPRESSION;
 	stmt->stmt_expr.expression = expression;
 	*end = i;
 	return stmt;
+
+on_fail:
+	*end = i;
+	return NULL;
+}
+
+static Tau_StatementNode* parse_return_statement(Tau_State* state, Tau_Token* begin, Tau_Token** end)
+{
+	Tau_Token* i = begin->next;
+	Tau_ExprNode* expression = parse_expression(state, i, Tau_TRUE, &i);
+	if (!expression) goto on_fail;
+	Tau_StatementNode* stmt = Tau_ALLOC_TYPE(Tau_StatementNode);
+	stmt->type = Tau_ST_RETURN;
+	stmt->stmt_return.expression = expression;
+	*end = i;
+	return stmt;
+
+on_fail:
+	*end = i;
+	return NULL;
 }
 
 
@@ -369,6 +403,11 @@ static Tau_StatementNode* parse_statement(Tau_State* state, Tau_Token* begin, Ta
 		stmt = parse_if_statement(state, begin, end);
 		break;
 
+	case Tau_KW_RETURN:
+		stmt = parse_return_statement(state, begin, end);
+		break;
+
+	case Tau_KW_THEN:
 	case Tau_KW_ELSE:
 	case Tau_KW_END:
 		*end = begin;

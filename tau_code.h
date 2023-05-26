@@ -160,6 +160,7 @@ typedef enum
 	Tau_ST_FOR,
 	Tau_ST_WHILE,
 	Tau_ST_DOWHILE,
+	Tau_ST_RETURN,
 	Tau_ST_SCOPE,
 	Tau_NUM_STATEMENTNODETYPES
 } Tau_StatementNodeType;
@@ -189,6 +190,10 @@ typedef struct Tau_StatementNode
 		{
 			Tau_ExprNode* expression;
 		} stmt_expr;
+		struct
+		{
+			Tau_ExprNode* expression;
+		} stmt_return;
 		struct
 		{
 			Tau_ExprNode* condition;
