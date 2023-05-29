@@ -82,15 +82,15 @@ on_fail:
 
 
 
-#define PUSH_OPERAND(node)									\
-	Tau_PushBackList(&l_operands, &node->links_operands);	\
-	Tau_PushBackList(&l_all, &node->links_all);				\
-	prevwasoperator = Tau_FALSE;								node->token = i
+#define PUSH_OPERAND(node)										\
+	Tau_PushBackList(&l_operands, &node->links_operands);		\
+	Tau_PushBackList(&l_all, &node->links_all);					\
+	prevwasoperator = Tau_FALSE;									node->token = i
 
-#define PUSH_OPERATOR(node)									\
-	Tau_PushBackList(&l_operators, &node->links_operators);	\
-	Tau_PushBackList(&l_all, &node->links_all);				\
-	prevwasoperator = Tau_TRUE;									node->token = i
+#define PUSH_OPERATOR(node)										\
+	Tau_PushBackList(&l_operators, &node->links_operators);		\
+	Tau_PushBackList(&l_all, &node->links_all);					\
+	prevwasoperator = Tau_TRUE;										node->token = i
 
 
 /** @brief Parses an expression tree.
@@ -259,28 +259,21 @@ expr_end:
 	}
 	putchar('\n');
 
-	/* Now organize the expression tree */
-
-	/*
-	1 + 2 * 3 * 4
-
-	    +
-	   1  *
-	     *  4
-		2 3
-
-	2 * 3 + 1 * 2
-
-
-	*/
-
-	*end = i;
-
 	if (l_all.count <= 0) /* Expression was empty */
 	{
 		printf(" > Expression was empty\n");
 		goto on_fail;
 	}
+	
+	printf("Operators in order of precedence: ");
+	for (parse_exprnode* n = l_operators.begin; n; n = n->links_operators.next)
+	{
+		Tau_PrintToken(n->token);
+		printf(" ");
+	}
+	putchar('\n');
+
+	*end = i;
 
 	Tau_ExprNode* top = ((parse_exprnode*)l_all.begin)->node;
 

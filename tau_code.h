@@ -69,6 +69,7 @@ enum
 };
 extern const char* tau_operator_strings[Tau_NUM_OPERATORS];
 extern const char* tau_operatorid_names[Tau_NUM_OPERATORS];
+extern const int tau_operator_precedence[Tau_NUM_OPERATORS];
 
 /**
  * Checks the operator id of a string.

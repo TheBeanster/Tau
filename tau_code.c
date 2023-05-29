@@ -102,6 +102,37 @@ const char* tau_operatorid_names[Tau_NUM_OPERATORS] =
 	"OP_ARRAYACCESS"
 };
 
+const int tau_operator_precedence[Tau_NUM_OPERATORS] =
+{
+	1, // "ASSIGN",
+	1, // "ASSIGNADDITION",
+	1, // "ASSIGNSUBTRACTION",
+	1, // "ASSIGNMULTIPLICATION",
+	1, // "ASSIGNDIVISION",
+
+	9, // "NOT",
+	4, // "AND",
+	4, // "OR",
+	4, // "XOR",
+	8, // "NEGATIVE"
+
+	2, // "EQUALITY",
+	2, // "INEQUALITY",
+	3, // "LESS",
+	3, // "GREATER",
+	3, // "LESSOREQUAL",
+	3, // "GREATEROREQUAL",
+
+	5, // "ADDITION",
+	5, // "SUBTRACTION",
+	6, // "MULTIPLICATION",
+	6, // "DIVISION",
+
+	10  // "MEMBERACCESS"
+};
+
+
+
 Tau_OperatorID Tau_GetOperator(const char* string)
 {
 	for (int i = 0; i < Tau_NUM_OPERATORS; i++)
