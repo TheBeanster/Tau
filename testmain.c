@@ -43,7 +43,7 @@ int main(int argc, char** argv)
 
 	printf("\n\n\nValue testing:\n");
 
-	Tau_Value v1 = { Tau_TYPE_NUMBER, .v_number ={ 1 } };
+	Tau_Value v1 = { Tau_TYPE_NUMBER, .v_number ={ 2 } };
 	Tau_Value v2 = { Tau_TYPE_NUMBER, .v_number={ -0.0 } };
 	Tau_DoArithmeticOp(state, Tau_OP_DIV, &v1, &v2);
 	char str[100];
