@@ -37,35 +37,35 @@ Tau_KeywordID Tau_GetKeyword(const char* string);
 typedef char Tau_OperatorID;
 enum
 {
-	Tau_OP_ASSIGN,					/* '=' */
-	Tau_OP_ASSIGNADDITION,			/* '+=' */
-	Tau_OP_ASSIGNSUBTRACTION,		/* '-=' */
-	Tau_OP_ASSIGNMULTIPLICATION,	/* '*=' */
-	Tau_OP_ASSIGNDIVISION,			/* '/=' */
+	Tau_OP_ASSIGN,			/* '=' */
+	Tau_OP_ASSIGNADD,		/* '+=' */
+	Tau_OP_ASSIGNSUB,		/* '-=' */
+	Tau_OP_ASSIGNMUL,		/* '*=' */
+	Tau_OP_ASSIGNDIV,			/* '/=' */
 
-	Tau_OP_NOT,						/* '!' Logical not */
-	Tau_OP_AND,						/* '&' Logical and */
-	Tau_OP_OR,						/* '|' Logical or */
-	Tau_OP_XOR,						/* '^' Logical xor */
-	Tau_OP_NEGATIVE,				/* '-' Unary negative */
+	Tau_OP_NOT,				/* '!' Logical not */
+	Tau_OP_AND,				/* '&' Logical and */
+	Tau_OP_OR,				/* '|' Logical or */
+	Tau_OP_XOR,				/* '^' Logical xor */
+	Tau_OP_NEGATIVE,		/* '-' Unary negative */
 
-	Tau_OP_EQUALITY,				/* '==' */
-	Tau_OP_INEQUALITY,				/* '!=' */
-	Tau_OP_LESS,					/* '<'  */
-	Tau_OP_GREATER,					/* '>'  */
-	Tau_OP_LESSEQUAL,				/* '<=' */
-	Tau_OP_GREATEREQUAL,			/* '>=' */
+	Tau_OP_EQUALITY,		/* '==' */
+	Tau_OP_INEQUALITY,		/* '!=' */
+	Tau_OP_LESS,			/* '<'  */
+	Tau_OP_GREATER,			/* '>'  */
+	Tau_OP_LESSEQUAL,		/* '<=' */
+	Tau_OP_GREATEREQUAL,	/* '>=' */
 
-	Tau_OP_ADDITION,				/* '+' Arithmetic add */
-	Tau_OP_SUBTRACTION,				/* '-' Arithmetic subtract */
-	Tau_OP_MULTIPLICATION,			/* '*' Arithmetic multiply */
-	Tau_OP_DIVISION,				/* '/' Arithmetic divide */
+	Tau_OP_ADD,				/* '+' Arithmetic add */
+	Tau_OP_SUB,				/* '-' Arithmetic subtract */
+	Tau_OP_MUL,				/* '*' Arithmetic multiply */
+	Tau_OP_DIV,				/* '/' Arithmetic divide */
 
-	Tau_OP_MEMBERACCESS,			/* '.' */
-	Tau_OP_ARRAYACCESS,				/* '[]' */
+	Tau_OP_MEMBERACCESS,	/* '.' */
+	Tau_OP_ARRAYACCESS,		/* '[]' */
 
 	Tau_NUM_OPERATORS,
-	Tau_OP_NULL = -1,				/* Invalid or non operator */
+	Tau_OP_NULL = -1,		/* Invalid or non operator */
 };
 extern const char* tau_operator_strings[Tau_NUM_OPERATORS];
 extern const char* tau_operatorid_names[Tau_NUM_OPERATORS];
@@ -77,10 +77,10 @@ extern const char* tau_operatorid_names[Tau_NUM_OPERATORS];
  */
 Tau_OperatorID Tau_GetOperator(const char* string);
 
-#define Tau_IsAssignmentOp(op)	((op) >= Tau_OP_ASSIGN		|| (op) <= Tau_OP_ASSIGNDIVISION)
+#define Tau_IsAssignmentOp(op)	((op) >= Tau_OP_ASSIGN		|| (op) <= Tau_OP_ASSIGNDIV)
 #define Tau_IsLogicalOp(op)		((op) >= Tau_OP_NOT			|| (op) <= Tau_OP_XOR)
 #define Tau_IsRelationalOp(op)	((op) >= Tau_OP_EQUALITY	|| (op) <= Tau_OP_GREATEREQUAL)
-#define Tau_IsArithmeticOp(op)	((op) >= Tau_OP_ADDITION	|| (op) <= Tau_OP_DIVISION)
+#define Tau_IsArithmeticOp(op)	((op) >= Tau_OP_ADD	|| (op) <= Tau_OP_DIV)
 #define Tau_IsUnaryOp(op)		((op) == Tau_OP_NOT			|| (op) == Tau_OP_NEGATIVE)
 
 

@@ -43,9 +43,9 @@ int main(int argc, char** argv)
 
 	printf("\n\n\nValue testing:\n");
 
-	Tau_Value v1 = { Tau_TYPE_BOOL, .v_bool={ 1 } };
-	Tau_Value v2 = { Tau_TYPE_BOOL, .v_bool={ 1 } };
-	Tau_VAdd(state, &v1, &v2);
+	Tau_Value v1 = { Tau_TYPE_NUMBER, .v_number ={ 1 } };
+	Tau_Value v2 = { Tau_TYPE_NUMBER, .v_number={ -0.0 } };
+	Tau_DoArithmeticOp(state, Tau_OP_DIV, &v1, &v2);
 	char str[100];
 	Tau_ValueString(&v1, str);
 	printf("v1 = %s\n", str);

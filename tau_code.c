@@ -75,10 +75,10 @@ const char* tau_operator_strings[Tau_NUM_OPERATORS] =
 const char* tau_operatorid_names[Tau_NUM_OPERATORS] =
 {
 	"OP_ASSIGN",
-	"OP_ASSIGNADDITION",
-	"OP_ASSIGNSUBTRACTION",
-	"OP_ASSIGNMULTIPLICATION",
-	"OP_ASSIGNDIVISION",
+	"OP_ASSIGNADD",
+	"OP_ASSIGNSUB",
+	"OP_ASSIGNMUL",
+	"OP_ASSIGNDIV",
 
 	"OP_NOT",
 	"OP_AND",
@@ -93,10 +93,10 @@ const char* tau_operatorid_names[Tau_NUM_OPERATORS] =
 	"OP_LESSEQUAL",
 	"OP_GREATEREQUAL",
 
-	"OP_ADDITION",
-	"OP_SUBTRACTION",
-	"OP_MULTIPLICATION",
-	"OP_DIVISION",
+	"OP_ADD",
+	"OP_SUB",
+	"OP_MUL",
+	"OP_DIV",
 
 	"OP_MEMBERACCESS",
 	"OP_ARRAYACCESS"
