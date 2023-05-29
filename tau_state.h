@@ -2,11 +2,15 @@
 #define _Tau_STATE_H_
 
 #include "tau_utility.h"
+#include "tau_value.h"
 
 typedef struct
 {
 	Tau_List codebodies;
 	Tau_List messages;
+
+	Tau_List values; /* List of Tau_RTValue. All allocated values in use */
+	Tau_List global_variables; /* List of all global variables in the state */
 } Tau_State;
 
 Tau_State* Tau_CreateState();

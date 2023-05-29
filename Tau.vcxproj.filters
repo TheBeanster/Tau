@@ -39,7 +39,7 @@
     <ClCompile Include="tau_parse.c">
       <Filter>Source Files\Parse</Filter>
     </ClCompile>
-    <ClCompile Include="tau_object.c">
+    <ClCompile Include="tau_value.c">
       <Filter>Source Files\Runtime</Filter>
     </ClCompile>
   </ItemGroup>
@@ -56,7 +56,7 @@
     <ClInclude Include="tau_parse.h">
       <Filter>Source Files\Parse</Filter>
     </ClInclude>
-    <ClInclude Include="tau_object.h">
+    <ClInclude Include="tau_value.h">
       <Filter>Source Files\Runtime</Filter>
     </ClInclude>
   </ItemGroup>
