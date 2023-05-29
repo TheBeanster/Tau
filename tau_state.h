@@ -11,6 +11,8 @@ typedef struct
 
 	Tau_List values; /* List of Tau_RTValue. All allocated values in use */
 	Tau_List global_variables; /* List of all global variables in the state */
+
+	int linenum;
 } Tau_State;
 
 Tau_State* Tau_CreateState();
@@ -45,15 +47,20 @@ void Tau_PushStateMessage(Tau_State* state, Tau_StateMessageType type, int linen
 
 #define Tau_PUSHCONSTSYNTAXERROR(msg) Tau_PushStateMessage(state, STATEMSG_SYNTAXERROR, linenum, msg)
 
-#define Tau_PUSHSYNTAXERROR(format, ...)					\
+#define Tau_PUSHSYNTAXERROR(format, ...) {					\
 	char _msg[120];											\
 	sprintf(_msg, format, __VA_ARGS__);						\
-	Tau_PushStateMessage(state, STATEMSG_SYNTAXERROR, linenum, _msg)
+	Tau_PushStateMessage(state, STATEMSG_SYNTAXERROR, linenum, _msg); }
 
-#define Tau_PUSHTOKENERROR(token, format, ...)				\
+#define Tau_PUSHTOKENERROR(token, format, ...) {			\
 	char _msg[120];											\
 	sprintf(_msg, format, __VA_ARGS__);						\
-	Tau_PushStateMessage(state, STATEMSG_SYNTAXERROR, token->linenum, _msg)
+	Tau_PushStateMessage(state, STATEMSG_SYNTAXERROR, token->linenum, _msg); }
+
+#define Tau_PUSHRUNTIMEERROR(format, ...) {					\
+	char _msg[120];											\
+	sprintf(_msg, format, __VA_ARGS__);						\
+	Tau_PushStateMessage(state, STATEMSG_RUNTIMEERROR, state->linenum, _msg); }
 
 void Tau_PrintAllStateMessages(Tau_State* state);
 

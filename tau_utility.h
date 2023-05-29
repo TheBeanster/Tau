@@ -6,6 +6,7 @@
 #include <assert.h>
 #include <string.h>
 #include <ctype.h>
+#include <stdint.h>
 
 typedef enum
 {
@@ -15,15 +16,18 @@ typedef enum
 
 #define Tau_ASSERT(expr) assert(expr)
 
-#ifndef Tau_USE_DOUBLE
+#ifndef Tau_32BITNUMBERS
 typedef float Tau_Float;
+typedef int32_t Tau_Int;
 #else
 typedef double Tau_Float;
+typedef int64_t Tau_Int;
 #endif
 
 
 /* Memory allocation functions */
 
+#define Tau_USE_STD_ALLOC
 #ifdef Tau_USE_STD_ALLOC
 
 #define Tau_MALLOC(size)			malloc(size)

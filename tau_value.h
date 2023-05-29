@@ -2,16 +2,19 @@
 #define _Tau_OBJECT_H_
 
 #include "tau_utility.h"
+#include "tau_code.h"
 
 typedef enum
 {
 	Tau_TYPE_NUMBER,
-	Tau_TYPE_BOOLEAN,
+	Tau_TYPE_BOOL,
 	Tau_TYPE_STRING,
 	Tau_TYPE_ARRAY,
 	Tau_TYPE_OBJECT,
 	Tau_TYPE_FUNCTION,
+	Tau_NUMTYPES
 } Tau_ValueType;
+extern const char* const tau_valuetype_names[Tau_NUMTYPES];
 
 typedef struct Tau_Value
 {
@@ -22,8 +25,8 @@ typedef struct Tau_Value
 		Tau_Bool v_bool;
 		struct
 		{
-			int length;
 			char* chars;
+			int length;
 		} v_string;
 		Tau_List v_array;
 		struct
@@ -51,7 +54,11 @@ Tau_Value* Tau_CreateValue(Tau_ValueType type);
 void Tau_ClearValue(Tau_Value* val);
 void Tau_DestroyValue(Tau_Value* val);
 
-void Tau_VAdd(Tau_Value* val1, const Tau_Value* val2);
+int Tau_ValueString(Tau_Value* val, char* str);
+
+Tau_Bool Tau_VAdd(struct Tau_State* state, Tau_Value* val1, const Tau_Value* val2);
+
+Tau_Bool Tau_BinaryOp(struct Tau_State* state, Tau_OperatorID op, Tau_Value* val1, const Tau_Value* val2);
 
 
 

@@ -36,6 +36,10 @@ void Tau_PrintAllStateMessages(Tau_State* state)
 			printf("Syntax error on line %i > %s\n", i->linenum, i->msg);
 			break;
 
+		case STATEMSG_RUNTIMEERROR:
+			printf("Runtime error on line %i > %s\n", i->linenum, i->msg);
+			break;
+
 		default:
 			printf("msg > %s\n", i->msg);
 			break;
