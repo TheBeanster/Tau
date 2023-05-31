@@ -1,0 +1,19 @@
+
+5 == 4 + 6 * 7 | 3 / 8 + 1 < 2 - 0
+
+== <
+|
++ -
+* /
+
+(5 == 5) == true
+
+If lower or equal precedence: insert between parent and grand parent
+If higher: new node and current becomes child of that
+If on number: compare curnode becomes left child of operator
+
+1 * 2 + 3 * 4
+
+
+ *
+1 2

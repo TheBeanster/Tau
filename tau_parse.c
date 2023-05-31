@@ -9,25 +9,6 @@ static Tau_ExprNode* parse_expression(Tau_State* state, const Tau_Token* begin, 
 
 
 
-typedef struct parse_exprnode
-{
-	Tau_ListNode links_all;
-	union
-	{
-		Tau_ListNode links_operands;
-		Tau_ListNode links_operators;
-	};
-	Tau_ExprNode* node;
-	Tau_Token* token; // TODO This is temporary
-} parse_exprnode;
-
-#define CREATE_NODE(t)										\
-	parse_exprnode* node = Tau_ALLOC_TYPE(parse_exprnode);	\
-	node->node = Tau_ALLOC_TYPE(Tau_ExprNode);				\
-	node->node->type = t
-
-
-
 typedef struct list_exprnode
 {
 	Tau_LISTLINKSHEADER(list_exprnode);
@@ -80,19 +61,6 @@ on_fail:
 
 
 
-
-
-#define PUSH_OPERAND(node)										\
-	Tau_PushBackList(&l_operands, &node->links_operands);		\
-	Tau_PushBackList(&l_all, &node->links_all);					\
-	prevwasoperator = Tau_FALSE;									node->token = i
-
-#define PUSH_OPERATOR(node)										\
-	Tau_PushBackList(&l_operators, &node->links_operators);		\
-	Tau_PushBackList(&l_all, &node->links_all);					\
-	prevwasoperator = Tau_TRUE;										node->token = i
-
-
 /** @brief Parses an expression tree.
  * @param state 
  * @param begin The token where the expression begins. Shouldn't be separator
@@ -106,182 +74,84 @@ static Tau_ExprNode* parse_expression(Tau_State* state, const Tau_Token* begin, 
 	printf(" > Parsing expression starting with '");
 	Tau_PrintToken(begin);
 	printf("'\n");
-
 	if (!begin) return NULL;
 
-	/* Lists of parse_exprnode in the expression */
-	Tau_List l_operands = { 0 };
-	Tau_List l_operators = { 0 };
-	Tau_List l_all = { 0 }; /* List of all nodes in the expression */
 
-	Tau_Bool prevwasoperator = Tau_FALSE;
+
+	Tau_ExprNode* curnode = NULL;
 	Tau_Token* i = begin;
 	while (i)
 	{
+		Tau_ExprNode* newnode = NULL;
+
 		switch (i->type)
 		{
 		case Tau_TT_OPERATOR:
-		{
-			CREATE_NODE(Tau_ET_OPERATOR);
-			node->node->op.id = i->operatorid;
-			PUSH_OPERATOR(node);
-		}
+			newnode = Tau_ALLOC_TYPE(Tau_ExprNode);
+			newnode->type = Tau_ET_OPERATOR;
+			newnode->op.id = i->operatorid;
 			break;
 
-		case Tau_TT_KEYWORD:
-			if (i->keywordid == Tau_KW_FALSE || i->keywordid == Tau_KW_TRUE)
-			{
-				CREATE_NODE(Tau_ET_BOOLLITERAL);
-				node->node->boolean = i->keywordid != Tau_KW_FALSE;
-				PUSH_OPERAND(node);
-			}
-			else
-				/* Any other keyword ends expression */
-				if (prevwasoperator) /* Operator without right operand */
-				{
-					Tau_PUSHTOKENERROR(i, "Operator is missing right operand");
-					goto on_fail;
-				} else
-					goto expr_end;
-			break;
-
-		case Tau_TT_SEPARATOR:
-			switch (i->separatorid)
-			{
-			case Tau_SP_COMMA:
-			case Tau_SP_RPAREN:
-			case Tau_SP_RBRACE:
-			case Tau_SP_RBRACKET:
-				/* These all end expressions */
-				if (prevwasoperator)
-				{
-					Tau_PUSHTOKENERROR(i, "Operator is missing right operand");
-					goto on_fail; /* Operator without right operand */
-				} else
-					goto expr_end; /* Expression ends on any of , ) ] or } */
-				break;
-			case Tau_SP_LPAREN:
-			{
-				printf("Parsing subexpression\n");
-				Tau_Token* subexpr_end;
-				Tau_ExprNode* subexpr = parse_expression(state, i->next, Tau_FALSE, &subexpr_end);
-				if (subexpr && subexpr_end && subexpr_end->separatorid == Tau_SP_RPAREN)
-				{
-					/* Subexpression ends with matching parentheses */
-					parse_exprnode* node = Tau_ALLOC_TYPE(parse_exprnode);
-					node->node = subexpr;
-					PUSH_OPERAND(node);
-					i = subexpr_end;
-				} else
-				{
-					Tau_PUSHTOKENERROR(i, "Subexpression doesn't have closing parenthesis");
-					Tau_DestroyExpression(subexpr);
-					goto on_fail;
-				}
-				break;
-
-			}
-			default:
-				break;
-			}
+		case Tau_TT_NUMBERLITERAL:
+			newnode = Tau_ALLOC_TYPE(Tau_ExprNode);
+			newnode->type = Tau_ET_NUMBERLITERAL;
+			newnode->num = Tau_StringToFloat(i->string, NULL);
 			break;
 
 		case Tau_TT_IDENTIFIER:
+			newnode = Tau_ALLOC_TYPE(Tau_ExprNode);
+			newnode->type = Tau_ET_VARIABLE;
+			newnode->variable = _strdup(i->string);
+			break;
+
+		default:
+			break;
+		}
+
+		if (curnode)
 		{
-			/* Variable OR function call */
-			if (i->next && i->next->separatorid == Tau_SP_LPAREN)
+			if (newnode->type != Tau_ET_OPERATOR)
 			{
-				/* Function call */
-				Tau_Token* funccall_end;
-				Tau_ExprNode* funccall = parse_functioncall(state, i, &funccall_end);
-				if (funccall && funccall_end && funccall_end->separatorid == Tau_SP_RPAREN)
+				if (curnode->type == Tau_ET_OPERATOR)
 				{
-					/* Subexpression ends with matching parentheses */
-					parse_exprnode* node = Tau_ALLOC_TYPE(parse_exprnode);
-					node->node = funccall;
-					PUSH_OPERAND(node);
-					i = funccall_end;
+					if (!curnode->op.left)
+						curnode->op.left = newnode;
+					else if (!curnode->op.right)
+						curnode->op.right = newnode;
+					else
+						assert(0);
+					newnode->parent = curnode;
 				} else
 				{
-					Tau_PUSHTOKENERROR(i, "Couldn't parse function call");
-					Tau_DestroyExpression(funccall);
+					/* Two operands next to eachother */
+					Tau_PUSHTOKENERROR(i, "Missing operator");
 					goto on_fail;
 				}
 			} else
 			{
-				/* Variable */
-				CREATE_NODE(Tau_ET_VARIABLE);
-				node->node->variable = _strdup(i->string);
-				PUSH_OPERAND(node);
+				if (curnode->type != Tau_ET_OPERATOR)
+				{
+					newnode->op.left = curnode;
+					assert(!curnode->parent);
+					curnode->parent = curnode;
+				} else
+				{
+
+				}
 			}
 		}
-			break;
 
-		case Tau_TT_NUMBERLITERAL:
-		{
-			CREATE_NODE(Tau_ET_NUMBERLITERAL);
-			node->node->num = strtof(i->string, NULL);
-			PUSH_OPERAND(node);
-		}
-			break;
-
-		default:
-			goto on_fail;
-			break;
-		}
-
-		/* Expressions can end if there is a non operator at the end of a line */
-		if (readendline && i->lastonline && !prevwasoperator)
-		{
-			printf("Expression ended by endline\n");
-			i = i->next;
-			goto expr_end;
-		}
-
+		curnode = newnode;
 		i = i->next;
 	}
-	/* Reached end of file */
 
-	if (prevwasoperator)
-	{
-		Tau_PUSHTOKENERROR(begin, "Expression doesn't have an end");
-		goto on_fail;
-	}
+	Tau_ExprNode* topnode = curnode;
+	for (; topnode->parent; topnode = topnode->parent);
 
-expr_end:
-	printf(" > Expression ended on token '");
-	Tau_PrintToken(i);
-	printf("'\nTokens in expression: ");
-	for (parse_exprnode* n = l_all.begin; n; n = n->links_all.next)
-	{
-		Tau_PrintToken(n->token);
-		printf(" ");
-	}
-	putchar('\n');
-
-	if (l_all.count <= 0) /* Expression was empty */
-	{
-		printf(" > Expression was empty\n");
-		goto on_fail;
-	}
-	
-	printf("Operators in order of precedence: ");
-	for (parse_exprnode* n = l_operators.begin; n; n = n->links_operators.next)
-	{
-		Tau_PrintToken(n->token);
-		printf(" ");
-	}
-	putchar('\n');
+	printf("%p\n", curnode);
 
 	*end = i;
-
-	Tau_ExprNode* top = ((parse_exprnode*)l_all.begin)->node;
-
-	/* parse_exprnode structs also allocate exprnodes when created, 
-	 * these shouldn't be freed since they should be part of the expression tree by this point. */
-	Tau_ClearList(&l_all, NULL);
-
-	return top;
+	return topnode;
 
 on_fail:
 

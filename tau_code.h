@@ -124,6 +124,7 @@ extern const char* tau_exprnodetype_names[Tau_NUM_EXPRNODETYPES];
 typedef struct
 {
 	Tau_ExprNodeType type;
+	struct Tau_ExprNode* parent;
 	union
 	{
 		struct

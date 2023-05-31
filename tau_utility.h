@@ -19,9 +19,13 @@ typedef enum
 #ifndef Tau_32BITNUMBERS
 typedef float Tau_Float;
 typedef int32_t Tau_Int;
+
+#define Tau_StringToFloat strtof
 #else
 typedef double Tau_Float;
 typedef int64_t Tau_Int;
+
+#define Tau_StringToFloat strtod
 #endif
 
 
